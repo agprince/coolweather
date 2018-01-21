@@ -1,6 +1,7 @@
 package com.agprincefu.andriod.coolweather;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 import com.agprincefu.andriod.coolweather.db.City;
 import com.agprincefu.andriod.coolweather.db.County;
 import com.agprincefu.andriod.coolweather.db.Province;
+import com.agprincefu.andriod.coolweather.gson.Weather;
 import com.agprincefu.andriod.coolweather.util.HttpUtil;
 import com.agprincefu.andriod.coolweather.util.Utility;
 
@@ -35,7 +37,7 @@ import okhttp3.Response;
 
 public class ChooseAreaFragment extends Fragment {
 
-    private static final String TAG = "ChooseAreaFragment";
+    private static final String TAG = "agtest";
     private static final String baseAddress = "http://guolin.tech/api/china";
     public static final int LEVEL_PROVINCE = 0;
     public static final int LEVEL_CITY = 1;
@@ -81,6 +83,12 @@ public class ChooseAreaFragment extends Fragment {
                 }else if(currentLevel == LEVEL_CITY){
                     selectedCity = mCityList.get(i);
                     queryCounties();
+                }else if(currentLevel == LEVEL_COUNTY){
+                    String weatherId = mCountyList.get(i).getWeatherId();
+                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                    intent.putExtra("weather_id",weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
