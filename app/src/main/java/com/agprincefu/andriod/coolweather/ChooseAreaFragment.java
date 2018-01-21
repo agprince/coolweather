@@ -1,5 +1,6 @@
 package com.agprincefu.andriod.coolweather;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
@@ -80,24 +81,32 @@ public class ChooseAreaFragment extends Fragment {
                 if (currentLevel == LEVEL_PROVINCE) {
                     selectedProvince = mProvinceList.get(i);
                     queryCities();
-                }else if(currentLevel == LEVEL_CITY){
+                } else if (currentLevel == LEVEL_CITY) {
                     selectedCity = mCityList.get(i);
                     queryCounties();
-                }else if(currentLevel == LEVEL_COUNTY){
+                } else if (currentLevel == LEVEL_COUNTY) {
+
                     String weatherId = mCountyList.get(i).getWeatherId();
-                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
-                    intent.putExtra("weather_id",weatherId);
-                    startActivity(intent);
-                    getActivity().finish();
+                    if (getActivity() instanceof MainActivity) {
+                        Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                        intent.putExtra("weather_id", weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    } else if (getActivity() instanceof WeatherActivity) {
+                        WeatherActivity activity = (WeatherActivity) getActivity();
+                        activity.mDrawerLayout.closeDrawers();
+                        activity.swipeRefresh.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                    }
                 }
             }
         });
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(currentLevel == LEVEL_COUNTY){
+                if (currentLevel == LEVEL_COUNTY) {
                     queryCities();
-                }else if(currentLevel == LEVEL_CITY){
+                } else if (currentLevel == LEVEL_CITY) {
                     queryProvinces();
                 }
             }
@@ -114,7 +123,7 @@ public class ChooseAreaFragment extends Fragment {
             dataList.clear();
             for (Province province : mProvinceList) {
                 dataList.add(province.getProvinceName());
-                Log.d(TAG, "queryProvinces: "+province.getProvinceName());
+                Log.d(TAG, "queryProvinces: " + province.getProvinceName());
             }
             mAdapter.notifyDataSetChanged();
             mListView.setSelection(0);
@@ -135,41 +144,42 @@ public class ChooseAreaFragment extends Fragment {
             dataList.clear();
             for (City city : mCityList) {
                 dataList.add(city.getCityName());
-                Log.d(TAG, "queryCities: "+city.getCityName());
+                Log.d(TAG, "queryCities: " + city.getCityName());
             }
             mAdapter.notifyDataSetChanged();
             mListView.setSelection(0);
             currentLevel = LEVEL_CITY;
 
-        }else{
-            int provinceCode  =selectedProvince.getProvinceCode();
-            String address = baseAddress+"/"+provinceCode;
-            queryFromServer(address,"city");
+        } else {
+            int provinceCode = selectedProvince.getProvinceCode();
+            String address = baseAddress + "/" + provinceCode;
+            queryFromServer(address, "city");
         }
 
     }
-    private void queryCounties(){
+
+    private void queryCounties() {
         titleText.setText(selectedCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
-        mCountyList = DataSupport.where("cityId = ? ",String.valueOf(selectedCity.getId())).find(County.class);
+        mCountyList = DataSupport.where("cityId = ? ", String.valueOf(selectedCity.getId())).find(County.class);
 
-        if(mCountyList.size()>0){
+        if (mCountyList.size() > 0) {
             dataList.clear();
-            for(County county:mCountyList){
+            for (County county : mCountyList) {
                 dataList.add(county.getCountyName());
-                Log.d(TAG, "queryCounties: "+county.getCountyName());
+                Log.d(TAG, "queryCounties: " + county.getCountyName());
 
             }
             mAdapter.notifyDataSetChanged();
             mListView.setSelection(0);
-            Log.d(TAG, "queryCounties: "+mListView.toString());
+            Log.d(TAG, "queryCounties: " + mListView.toString());
             currentLevel = LEVEL_COUNTY;
 
-        }else{
+        } else {
             int provinceCode = selectedProvince.getProvinceCode();
             int cityCode = selectedCity.getCityCode();
-            String address = baseAddress+"/"+provinceCode+"/"+cityCode;
-            queryFromServer(address,"county");
+            String address = baseAddress + "/" + provinceCode + "/" + cityCode;
+            queryFromServer(address, "county");
         }
 
 
@@ -181,7 +191,7 @@ public class ChooseAreaFragment extends Fragment {
             @Override
             public void onFailure(Call call, IOException e) {
                 closeProgressDialog();
-                Toast.makeText(getActivity(),"加载失败",Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "加载失败", Toast.LENGTH_SHORT).show();
 
             }
 
@@ -189,25 +199,25 @@ public class ChooseAreaFragment extends Fragment {
             public void onResponse(Call call, Response response) throws IOException {
                 String responseText = response.body().string();
                 boolean result = false;
-                if("province".equals(key)){
+                if ("province".equals(key)) {
                     result = Utility.handleProvincesResponse(responseText);
-                }else if("city".equals(key)){
-                    result = Utility.handleCitiesResponse(responseText,selectedProvince.getId());
+                } else if ("city".equals(key)) {
+                    result = Utility.handleCitiesResponse(responseText, selectedProvince.getId());
 
-                }else if("county".equals(key)){
-                    result = Utility.handleCountiesResponse(responseText,selectedCity.getId());
+                } else if ("county".equals(key)) {
+                    result = Utility.handleCountiesResponse(responseText, selectedCity.getId());
                 }
 
-                if(result){
+                if (result) {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             closeProgressDialog();
-                            if("province".equals(key)){
+                            if ("province".equals(key)) {
                                 queryProvinces();
-                            }else if("city".equals(key)){
+                            } else if ("city".equals(key)) {
                                 queryCities();
-                            }else if("county".equals(key)){
+                            } else if ("county".equals(key)) {
                                 queryCounties();
                             }
                         }
